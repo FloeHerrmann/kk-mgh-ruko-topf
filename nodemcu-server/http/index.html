@@ -1,0 +1,118 @@
+<html>
+	<head>
+		<style>
+			table {
+				border: 1px solid #999;
+   				border-radius: 10px;
+   				width: 96%;
+   				margin: 4% auto 0;
+   				padding: 4%;
+   				text-align: center;
+   				font-family: sans-serif;
+			}
+			.label {
+				font-size: 60px!important;
+			}
+			.value {
+				font-size: 200px!important;
+			}
+			.info {
+				border-color: #bce8f1;
+				background-color: #d9edf7;
+				color: #31708f;
+				display: block;
+			}
+			.success {
+				border-color: #d6e9c6;
+				background-color: #dff0d8;
+				color: #3c763d;
+				display: block;
+			}
+			.danger {
+				border-color: #ebccd1;
+				background-color: #f2dede;
+				color: #a94442;
+				display: block;
+			}
+			.hide {
+				display: none;
+			}
+		</style>
+		<script>
+			var xmlHttp = null;
+			function getTemperature() {
+				var url = "/temperature.lua";
+				xmlHttp = new XMLHttpRequest();
+				xmlHttp.onreadystatechange = processRequest;
+				xmlHttp.open("GET", url, true);
+				xmlHttp.send( null );
+			}
+			function processRequest() {
+				if( xmlHttp.readyState == 4 ) {
+					if( xmlHttp.status == 200 ) {
+						var data = JSON.parse( xmlHttp.responseText );
+						if( data.current > data.target ) {
+							document.getElementById( "currentTable" ).className = 'danger';
+						} else if( data.current > (data.target * 0.9 ) ) {
+							document.getElementById( "currentTable" ).className = 'success';
+						} else {
+							document.getElementById( "currentTable" ).className = 'info';
+						}
+						if( data.current > (data.target * 0.98) ) {
+							document.getElementById( "notificationTable" ).className = 'danger';
+						} else {
+							document.getElementById( "notificationTable" ).className = 'hide';
+						}
+						document.getElementById( "currentValue" ).innerHTML = data.current + '&deg;C';
+						document.getElementById( "targetValue" ).innerHTML = data.target + '&deg;C';
+           			} else if( xmlHttp.status == 400 ) {
+						var data = JSON.parse( xmlHttp.responseText );
+						alert( data.current + " / " + data.target );
+					}
+				}
+			}
+		</script>
+		<title>R&uuml;Ko-Topf</title>
+	</head>
+
+	</body>
+		<table id="notificationTable" class="hide">
+			<tr>
+				<td class="label">
+					Zieltemperatur erreicht!
+				</td>
+			</tr>
+		</table>
+
+		<table id="currentTable" class="success">
+			<tr>
+				<td class="label">
+					Temperatur
+				</td>
+			</tr>
+			<tr>
+				<td id="currentValue" class="value">
+					-
+				</td>
+			</tr>
+		</table>
+
+		<table class="info">
+			<tr>
+				<td class="label">
+					Zieltemperatur
+				</td>
+			</tr>
+			<tr>
+				<td id="targetValue" class="value">
+					-
+				</td>
+			</tr>
+		</table>
+
+		<script>
+			getTemperature();
+			var interval = setInterval( function() { getTemperature() } , 5000 );
+		</script>
+	</body>
+<html>
