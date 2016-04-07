@@ -5,26 +5,6 @@ targetTemperature = 0
 -- End of data indicator
 EOF = "\r"
 
--- UART setup
-uart.setup( 0 , 9600 , 8 , 0 , 1 , 0 )
-
--- Handling incoming data
--- Data from arduino are send in a specific format: {current temp};{target temp}<CR>
--- Example: 67.5;80.0\r
-uart.on(
-  "data",
-  EOF,
-  function( data )
-    print( "Received from UART: " , data )
-    start = 1
-    currentTemperature = tonumber( string.sub( data , 1 , string.find( data , ";" , 1 , string.len( data ) ) - 1 ) )
-    start = string.find( data , ";" , start , string.len ( data ) ) + 1
-    targetTemperature = tonumber( string.sub( data , start , string.find( data , EOF , start , string.len( data ) ) - 1 ) )
-    print( "Parsed Data: ", currentTemperature , targetTemperature )
-  end, 
-  0
-)
-
 -- Begin WiFi configuration
 local wifiConfig = {}
 
@@ -129,3 +109,44 @@ if (not not wifi.sta.getip()) or (not not wifi.ap.getip()) then
     dofile("httpserver.lc")(80)
 end
 
+file.open( "parse.txt" , "r" )
+parseData = ( file.readline() )
+parseData = string.gsub( parseData , "\r" , "" )
+parseData = string.gsub( parseData , "\n" , "" )
+file.close()
+
+print( "Parsing >> " , parseData )
+
+if ( parseData == "true" ) then 
+	-- Handling incoming data
+	-- Data from arduino are send in a specific format: {current temp};{target temp}<CR>
+	-- Example: 67.5;80.0\r
+
+	uart.on(
+	  "data",
+	  EOF,
+	  function( data )
+		tempData = string.gsub( data , "\r" , "" )
+		tempData = string.gsub( tempData , "\n" , "" )
+		
+		print( "Received >> " , tempData )
+		
+		if tempData == "noParsing" then
+			file.open("parse.txt","w")
+			file.write( "false" )
+			file.close()
+			print( "Parsing Disabled AFTER Restart" )
+		else
+			start = 1
+			currentTemperature = tonumber( string.sub( data , 1 , string.find( data , ";" , 1 , string.len( data ) ) - 1 ) )
+			start = string.find( data , ";" , start , string.len ( data ) ) + 1
+			targetTemperature = tonumber( string.sub( data , start , string.find( data , EOF , start , string.len( data ) ) - 1 ) )
+			print( "Parsed Data: ", currentTemperature , targetTemperature )
+		end
+	  end, 
+	  0
+	)
+	
+	-- UART setup
+	uart.setup( 0 , 9600 , 8 , 0 , 1 , 0 )
+end
